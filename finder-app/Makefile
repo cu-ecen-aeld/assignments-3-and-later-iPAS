@@ -1,7 +1,8 @@
 # https://opensource.com/article/18/8/what-how-makefile
 
 BINS := writer
-CC := gcc
+# CC := gcc
+CC := ${CROSS_COMPILE}gcc
 
 LFLAGS = -lm
 

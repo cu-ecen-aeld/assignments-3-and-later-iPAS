@@ -17,8 +17,8 @@ all: ${BINS}
 	${CC} -c $<
 
 clean:
-	rm -rvf *.o ${BINS}
+	rm -rvf *.o ${BINS} test.txt
 
 run: all
-	./writer
+	./writer hello test.txt
 	tail -n10000 /var/log/syslog | grep writer

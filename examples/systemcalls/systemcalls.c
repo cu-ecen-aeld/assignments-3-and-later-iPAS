@@ -1,5 +1,8 @@
 #include "systemcalls.h"
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -48,7 +51,7 @@ bool do_exec(int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    // command[count] = command[count];
 
 /*
  * TODO:
@@ -59,10 +62,25 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    int child_status;
+    pid_t terminate_pid;
+    pid_t child_pid = fork();
+    if (child_pid == 0) 
+    {
+        exit((execv(command[0], command) == -1)? -1 : 0);
+    }
+    else
+    {
+        do
+        {
+            terminate_pid = wait(&child_status);
+        }
+        while (terminate_pid != child_pid);
+    }
 
     va_end(args);
 
-    return true;
+    return (child_status == 0)? true : false;
 }
 
 /**

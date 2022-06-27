@@ -66,10 +66,12 @@ fi
 # /proc, /sys       proc and sysfs file-system
 # /var              files modified at runtime (e.g. /var/log), needed to be retained after booting
 # /tmp              temporary files that can be delated on booting
-cd "${OUTDIR}/rootfs"
+mkdir rootfs
+cd rootfs
 mkdir bin sbin lib home etc
 mkdir dev proc sys tmp
 mkdir -p usr/bin usr/sbin usr/lib var/log
+# tree
 sudo chown -R root:root *
 
 cd "$OUTDIR"
@@ -81,16 +83,12 @@ git clone git://busybox.net/busybox.git
     # TODO:  Configure busybox
     make distclean
     make defconfig
-    grep CONFIG_PREFIX .config
-
 else
     cd busybox
 fi
 
-exit 0
 # TODO: Make and install busybox
-sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
-sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
+sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} CONFIG_PREFIX="${OUTDIR}/rootfs" install
 
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
@@ -98,6 +96,8 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
 SYSROOT="${CROSS_COMPILE}gcc --print-sysroot"
+echo $SYSROOT
+exit 0
 
 # TODO: Make device nodes
 

@@ -72,7 +72,7 @@ mkdir bin sbin lib home etc
 mkdir dev proc sys tmp
 mkdir -p usr/bin usr/sbin usr/lib var/log
 # tree
-sudo chown -R root:root *
+# sudo chown -R root:root *
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -88,17 +88,19 @@ else
 fi
 
 # TODO: Make and install busybox
-sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} CONFIG_PREFIX="${OUTDIR}/rootfs" install
+make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} CONFIG_PREFIX="${OUTDIR}/rootfs" install
+cd "${OUTDIR}/rootfs/"
 
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-SYSROOT="${CROSS_COMPILE}gcc --print-sysroot"
-echo $SYSROOT
-exit 0
+SYSROOT=`${CROSS_COMPILE}gcc --print-sysroot`
+cp -a "${SYSROOT}"/lib64/* lib
+sudo chown -R root:root *
 
+exit 0
 # TODO: Make device nodes
 
 # TODO: Clean and build the writer utility

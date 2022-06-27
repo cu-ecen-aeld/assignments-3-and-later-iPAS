@@ -100,8 +100,9 @@ SYSROOT=`${CROSS_COMPILE}gcc --print-sysroot`
 cp -a "${SYSROOT}"/lib64/* lib
 sudo chown -R root:root *
 
-exit 0
 # TODO: Make device nodes
+sudo mknod -m 666 dev/null c 1 3
+sudo mknod -m 666 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
 

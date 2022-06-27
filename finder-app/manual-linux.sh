@@ -43,7 +43,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     make -j4 HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} modules
     make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} dtbs
 fi
-exit 0
+
 echo "Adding the Image in outdir"
 
 echo "Creating the staging directory for the root filesystem"
@@ -55,6 +55,22 @@ then
 fi
 
 # TODO: Create necessary base directories
+# File Hierarchy Standdard (FHS)
+# /bin              programs to all user, used at booting
+# /sbin             programs for the admin, used at boot
+# /usr/bin
+# /usr/sbin         additional programs, lib, util which are NOT the part of booting
+# /dev              device nodes and other files
+# /etc              system configuration files
+# /lib              shared libraries
+# /proc, /sys       proc and sysfs file-system
+# /var              files modified at runtime (e.g. /var/log), needed to be retained after booting
+# /tmp              temporary files that can be delated on booting
+cd "${OUTDIR}/rootfs"
+mkdir bin sbin lib home etc
+mkdir dev proc sys tmp
+mkdir -p usr/bin usr/sbin usr/lib var/log
+sudo chown -R root:root *
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -63,17 +79,25 @@ git clone git://busybox.net/busybox.git
     cd busybox
     git checkout ${BUSYBOX_VERSION}
     # TODO:  Configure busybox
+    make distclean
+    make defconfig
+    grep CONFIG_PREFIX .config
+
 else
     cd busybox
 fi
 
+exit 0
 # TODO: Make and install busybox
+sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
+sudo make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
 
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
+SYSROOT="${CROSS_COMPILE}gcc --print-sysroot"
 
 # TODO: Make device nodes
 

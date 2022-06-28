@@ -26,8 +26,25 @@ void* threadfunc(void* thread_param)
     // pthread_exit()
     // --> pthread_cancel()
 
-    
+    usleep(thread_func_args->wait_to_obtain_ms * 1000);
 
+    int rc = pthread_mutex_lock(thread_func_args->mutex);
+    if (rc != 0)
+    {
+        printf("[%s:%d] pthread_mutex_lock() failed: %d\n", __FILE__, __LINE__, rc);
+        thread_func_args->thread_complete_success = false;
+    }
+    else
+    {
+        usleep(thread_func_args->wait_to_release_ms * 1000);
+
+        rc = pthread_mutex_unlock(thread_func_args->mutex);
+        if (rc != 0)
+        {
+            printf("[%s:%d] pthread_mutex_unlock() failed: %d\n", __FILE__, __LINE__, rc);
+            thread_func_args->thread_complete_success = false;
+        }
+    }
 
     return thread_param;
 }
@@ -48,12 +65,13 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
         .mutex = mutex,
         .wait_to_obtain_ms = wait_to_obtain_ms,
         .wait_to_release_ms = wait_to_release_ms,
+        .thread_complete_success = true,
     };
 
     int rc = pthread_create(thread, NULL, threadfunc, &thd);
     if (rc != 0)
     {
-        printf("pthread_create() failed: %d\n", rc);
+        printf("[%s:%d] pthread_create() failed: %d\n", __FILE__, __LINE__, rc);
         return false;
     }
 

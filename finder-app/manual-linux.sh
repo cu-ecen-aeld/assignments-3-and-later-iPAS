@@ -45,6 +45,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 fi
 
 echo "Adding the Image in outdir"
+cp "${OUTDIR}/linux-stable/arch/arm64/boot/Image" "${OUTDIR}"
 
 echo "Creating the staging directory for the root filesystem"
 cd "$OUTDIR"
@@ -74,9 +75,7 @@ mkdir -p usr/bin usr/sbin usr/lib var/log
 # tree
 # sudo chown -R root:root *
 cd "${OUTDIR}/linux-stable"
-make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH="${OUTDIR}/rootfs" modules_install
-cp ./arch/arm64/boot/Image "${OUTDIR}"
-cd "${OUTDIR}/rootfs"
+# make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH="${OUTDIR}/rootfs" modules_install
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -101,18 +100,33 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
 SYSROOT=`${CROSS_COMPILE}gcc --print-sysroot`
-cp -a "${SYSROOT}"/lib64/* lib
+# cp -a "${SYSROOT}"/lib64/* lib
+cp -a "${SYSROOT}"/lib64/libm.* lib
+cp -a "${SYSROOT}"/lib64/libresolv.* lib
+cp -a "${SYSROOT}"/lib64/libc.* lib
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 666 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
+cd "${FINDER_APP_DIR}"
+make clean
+make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-exit 0
+cp -a writer finder.sh finder-test.sh autorun-qemu.sh "${OUTDIR}/rootfs/home"
+mkdir "${OUTDIR}/rootfs/home/conf"
+cp -a conf/username.txt "${OUTDIR}/rootfs/home/conf"
+cd "${OUTDIR}/rootfs"
+
 # TODO: Chown the root directory
 sudo chown -R root:root *
 
 # TODO: Create initramfs.cpio.gz
+# find . -depth -print0 | cpio -ocv0  >"${OUTDIR}/initramfs.cpio"
+# sudo find . -print0 | sudo cpio --null --create --verbose --format=newc >"${OUTDIR}/initramfs.cpio"
+# gzip -f "${OUTDIR}/initramfs.cpio"
+# sudo chown root:root "${OUTDIR}/initramfs.cpio.gz"
+find . | sudo cpio --quiet -H newc -o | gzip -9 -n >"${OUTDIR}/initramfs.cpio.gz"

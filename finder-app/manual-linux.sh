@@ -75,7 +75,7 @@ mkdir -p usr/bin usr/sbin usr/lib var/log
 # tree
 # sudo chown -R root:root *
 cd "${OUTDIR}/linux-stable"
-# make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH="${OUTDIR}/rootfs" modules_install
+make HOSTCC=gcc-9 ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH="${OUTDIR}/rootfs" INSTALL_MOD_STRIP=1 modules_install
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -100,10 +100,20 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
 SYSROOT=`${CROSS_COMPILE}gcc --print-sysroot`
+
 # cp -a "${SYSROOT}"/lib64/* lib
-cp -a "${SYSROOT}"/lib64/libm.* lib
-cp -a "${SYSROOT}"/lib64/libresolv.* lib
-cp -a "${SYSROOT}"/lib64/libc.* lib
+
+# DEST_LIB=lib
+# cp -a "${SYSROOT}"/lib64/libm-*         ${DEST_LIB}
+# cp -a "${SYSROOT}"/lib64/libm.*         ${DEST_LIB}
+# cp -a "${SYSROOT}"/lib64/libresolv-*    ${DEST_LIB}
+# cp -a "${SYSROOT}"/lib64/libresolv.*    ${DEST_LIB}
+# cp -a "${SYSROOT}"/lib64/libc-*         ${DEST_LIB}
+# cp -a "${SYSROOT}"/lib64/libc.*         ${DEST_LIB}
+
+cp -a "${SYSROOT}"/lib/* lib/
+cp -a "${SYSROOT}"/lib64 .
+
 
 # TODO: Make device nodes
 sudo mknod -m 666 dev/null c 1 3

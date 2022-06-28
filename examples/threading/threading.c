@@ -60,15 +60,20 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
      *
      * See implementation details in threading.h file comment block
      */
-    struct thread_data thd =
-    {
-        .mutex = mutex,
-        .wait_to_obtain_ms = wait_to_obtain_ms,
-        .wait_to_release_ms = wait_to_release_ms,
-        .thread_complete_success = true,
-    };
+    // struct thread_data thd =
+    // {
+    //     .mutex = mutex,
+    //     .wait_to_obtain_ms = wait_to_obtain_ms,
+    //     .wait_to_release_ms = wait_to_release_ms,
+    //     .thread_complete_success = true,
+    // };
+    struct thread_data* thread_func_args = (struct thread_data *)malloc(sizeof(struct thread_data));
+    thread_func_args->mutex = mutex;
+    thread_func_args->wait_to_obtain_ms = wait_to_obtain_ms;
+    thread_func_args->wait_to_release_ms = wait_to_release_ms;
+    thread_func_args->thread_complete_success = true;
 
-    int rc = pthread_create(thread, NULL, threadfunc, &thd);
+    int rc = pthread_create(thread, NULL, threadfunc, thread_func_args);
     if (rc != 0)
     {
         printf("[%s:%d] pthread_create() failed: %d\n", __FILE__, __LINE__, rc);

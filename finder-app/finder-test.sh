@@ -59,6 +59,8 @@ CMD=finder.sh
 [[ "$(which $CMD)" == "" ]] && CMD=./finder.sh
 OUTPUTSTRING=$($CMD "$WRITEDIR" "$WRITESTR")
 
+echo "${OUTPUTSTRING}" > /tmp/assignment-4-result.txt
+
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"
 if [ $? -eq 0 ]; then

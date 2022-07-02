@@ -48,10 +48,16 @@ fi
 for i in $( seq 1 $NUMFILES)
 do
 	# ./writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
-	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+    # ./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+    CMD=writer
+    [[ "$(which $CMD)" == "" ]] && CMD=./writer
+	$CMD "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+# OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+CMD=finder.sh
+[[ "$(which $CMD)" == "" ]] && CMD=./finder.sh
+OUTPUTSTRING=$($CMD "$WRITEDIR" "$WRITESTR")
 
 set +e
 echo ${OUTPUTSTRING} | grep "${MATCHSTR}"

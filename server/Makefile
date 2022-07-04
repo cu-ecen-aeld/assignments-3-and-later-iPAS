@@ -3,6 +3,7 @@
 BINS := aesdsocket
 CC := ${CROSS_COMPILE}gcc
 
+CFLAGS = -Wall -Werror
 LFLAGS = -lm
 
 .PHONY = all default clean run
@@ -11,7 +12,7 @@ all: default
 default: ${BINS}
 
 %: %.o
-	${CC} ${LFLAGS} $< -o $@
+	${CC} ${CFLAGS} ${LFLAGS} $< -o $@
 
 %.o: %.c
 	${CC} -c $<

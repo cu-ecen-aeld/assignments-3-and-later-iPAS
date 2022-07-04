@@ -24,6 +24,9 @@
 #include <signal.h>
 
 #include <syslog.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 #define PORT "9000"  // the port users will be connecting to
@@ -205,14 +208,50 @@ int main(void) {
             // ### Child Process -- Begin ###
             close(sockfd);  // child doesn't need the listener
 
-            if (send(new_fd,            // Destined sockfd
-                     "Hello, world!",   // Data
-                     13,                // Data length
-                     0                  // Flag
-                     ) == -1) {
+            // Open file
+            int fd_tmp = open("/var/tmp/aesdsocketdata", O_RDWR | O_CREAT | O_APPEND, 0666);
+            // lseek(fd_tmp, 0, SEEK_SET);  // Goto the beginning, clean old data
+            // printf("position %ld\n", lseek(fd_tmp, 0, SEEK_CUR));
+            // printf("position %ld\n", lseek(fd_tmp, 0, SEEK_END));
+            // lseek(fd_tmp, 0, SEEK_END);  // Goto the last for appending
+
+            // Receiving
+            int recv_len;
+            char recv_buf[200];
+
+            do {
+                if ((recv_len = recv(new_fd, recv_buf, sizeof recv_buf, 0)) > 0) {
+                    printf("Recv: %s", recv_buf);
+                    printf("Len: %d\n", recv_len);
+                    write(fd_tmp, recv_buf, recv_len);
+                }
+                else {
+                    perror("Trying recv() .. failed");
+                    break;
+                }
+            } while (recv_len == sizeof recv_buf);
+
+            // Prepare Sending back
+            int data_len = lseek(fd_tmp, 0, SEEK_END);  // Goto the last for checking size
+            char *data_buf = malloc(data_len);
+
+            lseek(fd_tmp, 0, SEEK_SET);  // Goto the beginning
+            read(fd_tmp, data_buf, data_len);
+
+            // Sending
+            if (send(new_fd,    // Destined sockfd
+                    data_buf,  // Data
+                    data_len,  // Data length
+                    0          // Flag
+                    ) == -1) {
                 perror("Trying send() .. failed");
             }
 
+            // Deallocation
+            free(data_buf);
+
+
+            close(fd_tmp);
             close(new_fd);
             exit(0);
             // ### Child Process -- End ###

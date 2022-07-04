@@ -64,7 +64,7 @@ void * get_in_addr(struct sockaddr * sa) {
  *
  * @return int
  */
-int main(void) {
+int main(int argc, char *argv[]) {
     openlog(NULL, LOG_NDELAY, LOG_USER);
 
     int                     sockfd, new_fd;  // Listen on sock_fd, new connection on new_fd
@@ -156,6 +156,17 @@ int main(void) {
         syslog(LOG_ERR, msg);
         closelog();
         exit(-1);
+    }
+
+
+    // Daemonize
+    if (argc > 1) {
+        if (strcmp(argv[1], "-d") == 0) {
+            if (fork()) {
+                // ## Parent finish here ##
+                exit(0);
+            }
+        }
     }
 
 

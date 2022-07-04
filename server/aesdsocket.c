@@ -44,6 +44,12 @@ void sigchld_handler(int s) {
 }
 
 
+void sigint_sigterm_handler(int s) {
+
+    // remove("/var/tmp/aesdsocketdata");
+}
+
+
 /**
  * @brief Get the in addr object, IPv4 or IPv6
  *
@@ -242,25 +248,26 @@ int main(int argc, char *argv[]) {
                 }
             } while (recv_len == sizeof recv_buf);
 
-            // Prepare Sending back
-            int data_len = lseek(fd_tmp, 0, SEEK_END);  // Goto the last for checking size
-            char *data_buf = malloc(data_len);
+            if (recv_len > 0) {
+                // Prepare Sending back
+                int data_len = lseek(fd_tmp, 0, SEEK_END);  // Goto the last for checking size
+                char *data_buf = malloc(data_len);
 
-            lseek(fd_tmp, 0, SEEK_SET);  // Goto the beginning
-            read(fd_tmp, data_buf, data_len);
+                lseek(fd_tmp, 0, SEEK_SET);  // Goto the beginning
+                read(fd_tmp, data_buf, data_len);
 
-            // Sending
-            if (send(new_fd,    // Destined sockfd
-                    data_buf,  // Data
-                    data_len,  // Data length
-                    0          // Flag
-                    ) == -1) {
-                perror("Trying send() .. failed");
+                // Sending
+                if (send(new_fd,    // Destined sockfd
+                        data_buf,  // Data
+                        data_len,  // Data length
+                        0          // Flag
+                        ) == -1) {
+                    perror("Trying send() .. failed");
+                }
+
+                // Deallocation
+                free(data_buf);
             }
-
-            // Deallocation
-            free(data_buf);
-
 
             close(fd_tmp);
             close(new_fd);
@@ -268,6 +275,7 @@ int main(int argc, char *argv[]) {
             // ### Child Process -- End ###
 
         }
+
         close(new_fd);  // parent doesn't need this
     }
 

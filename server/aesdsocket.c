@@ -114,7 +114,7 @@ int main(void) {
                        sizeof(int)      // Optlen
                        ) == -1) {
             perror("setsockopt");
-            exit(1);
+            exit(-1);
         }
 
         // Bind it to the port we passed in to getaddrinfo().
@@ -133,13 +133,13 @@ int main(void) {
 
     if (p == NULL) {
         fprintf(stderr, "server: failed to bind\n");
-        exit(1);
+        exit(-1);
     }
 
     // Listen
     if (listen(sockfd, BACKLOG) == -1) {
         perror("listen");
-        exit(1);
+        exit(-1);
     }
 
 
@@ -149,7 +149,7 @@ int main(void) {
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         perror("sigaction");
-        exit(1);
+        exit(-1);
     }
 
 
@@ -184,7 +184,11 @@ int main(void) {
             // ### Child Process -- Begin ###
             close(sockfd);  // child doesn't need the listener
 
-            if (send(new_fd, "Hello, world!", 13, 0) == -1)
+            if (send(new_fd,            // Destined sockfd
+                     "Hello, world!",   // Data
+                     13,                // Data length
+                     0                  // Flag
+                     ) == -1)
                 perror("send");
             close(new_fd);
             exit(0);

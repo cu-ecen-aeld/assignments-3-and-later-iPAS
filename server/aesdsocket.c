@@ -33,6 +33,11 @@
 #define BACKLOG 10   // how many pending connections queue will hold
 
 
+/**
+ * @brief Reap all dead processes
+ *
+ * @param s
+ */
 void sigchld_handler(int s) {
     // waitpid() might overwrite errno, so we save and restore it:
     int saved_errno = errno;
@@ -44,9 +49,37 @@ void sigchld_handler(int s) {
 }
 
 
+/**
+ * @brief
+ *
+ * @param s
+ */
 void sigint_sigterm_handler(int s) {
+    remove("/var/tmp/aesdsocketdata");
+}
 
-    // remove("/var/tmp/aesdsocketdata");
+
+/**
+ * @brief 
+ * 
+ * @param sa 
+ * @param handler 
+ * @param signal 
+ */
+void bind_signal(struct sigaction *sa, void (*handler)(int), int signal) {
+    sa->sa_handler = handler;
+    sigemptyset(&sa->sa_mask);
+    sa->sa_flags = SA_RESTART;
+    if (sigaction(signal,       // An ended or stopped child process.
+                  sa,           // New
+                  NULL          // Old
+                  ) == -1) {
+        const char msg[] = "sigaction() failed";
+        perror(msg);
+        syslog(LOG_ERR, msg);
+        closelog();
+        exit(-1);
+    }
 }
 
 
@@ -78,8 +111,6 @@ int main(int argc, char *argv[]) {
 
     struct sockaddr_storage their_addr;  // Connector's address information
     socklen_t               sin_size;
-
-    struct sigaction        sa;
 
     int                     yes = 1;
     char                    s[INET6_ADDRSTRLEN];
@@ -178,20 +209,22 @@ int main(int argc, char *argv[]) {
 
     // Set signal handler
     // https://www.ibm.com/docs/en/zos/2.3.0?topic=functions-sigaction-examine-change-signal-action
-    sa.sa_handler = sigchld_handler;  // reap all dead processes
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD,      // An ended or stopped child process.
-                  &sa,          // New
-                  NULL          // Old
-                  ) == -1) {
-        const char msg[] = "sigaction() failed";
-        perror(msg);
-        syslog(LOG_ERR, msg);
-        closelog();
-        exit(-1);
-    }
-
+    struct sigaction sa_chld;
+    // sa_chld.sa_handler = sigchld_handler;  // reap all dead processes
+    // sigemptyset(&sa_chld.sa_mask);
+    // sa_chld.sa_flags = SA_RESTART;
+    // if (sigaction(SIGCHLD,      // An ended or stopped child process.
+    //               &sa_chld,          // New
+    //               NULL          // Old
+    //               ) == -1) {
+    //     const char msg[] = "sigaction() failed";
+    //     perror(msg);
+    //     syslog(LOG_ERR, msg);
+    //     closelog();
+    //     exit(-1);
+    // }
+    bind_signal(&sa_chld, sigchld_handler, SIGCHLD);
+    
 
     // Server ready
     syslog(LOG_DEBUG, "Waiting for connections ..");

@@ -56,6 +56,9 @@ void sigchld_handler(int s) {
  */
 void sigint_sigterm_handler(int s) {
     remove("/var/tmp/aesdsocketdata");
+    syslog(LOG_DEBUG, "Cought signal, exiting");
+    closelog();
+    exit(0);
 }
 
 
@@ -210,21 +213,11 @@ int main(int argc, char *argv[]) {
     // Set signal handler
     // https://www.ibm.com/docs/en/zos/2.3.0?topic=functions-sigaction-examine-change-signal-action
     struct sigaction sa_chld;
-    // sa_chld.sa_handler = sigchld_handler;  // reap all dead processes
-    // sigemptyset(&sa_chld.sa_mask);
-    // sa_chld.sa_flags = SA_RESTART;
-    // if (sigaction(SIGCHLD,      // An ended or stopped child process.
-    //               &sa_chld,          // New
-    //               NULL          // Old
-    //               ) == -1) {
-    //     const char msg[] = "sigaction() failed";
-    //     perror(msg);
-    //     syslog(LOG_ERR, msg);
-    //     closelog();
-    //     exit(-1);
-    // }
     bind_signal(&sa_chld, sigchld_handler, SIGCHLD);
-    
+    struct sigaction sa_int;
+    bind_signal(&sa_int, sigint_sigterm_handler, SIGINT);
+    struct sigaction sa_term;
+    bind_signal(&sa_term, sigint_sigterm_handler, SIGTERM);
 
     // Server ready
     syslog(LOG_DEBUG, "Waiting for connections ..");
@@ -248,7 +241,7 @@ int main(int argc, char *argv[]) {
                   s,
                   sizeof s);
 
-        syslog(LOG_DEBUG, "Accepted connection from %s\n", s);
+        syslog(LOG_DEBUG, "Accepted connection from %s", s);
 
         // Fork:
         // Parent -- go to listen waiting for incomming again.

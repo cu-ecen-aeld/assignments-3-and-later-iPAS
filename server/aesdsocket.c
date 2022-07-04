@@ -23,6 +23,8 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+#include <syslog.h>
+
 
 #define PORT "9000"  // the port users will be connecting to
 #define BACKLOG 10   // how many pending connections queue will hold
@@ -60,6 +62,8 @@ void * get_in_addr(struct sockaddr * sa) {
  * @return int
  */
 int main(void) {
+    openlog(NULL, LOG_NDELAY, LOG_USER);
+
     int                     sockfd, new_fd;  // Listen on sock_fd, new connection on new_fd
     struct addrinfo         hints, *servinfo, *p;
 
@@ -98,7 +102,7 @@ int main(void) {
         // Pick one
         sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (sockfd == -1) {
-            perror("server: socket");
+            perror("Trying socket() .. failed");
             continue;
         }
 
@@ -113,7 +117,10 @@ int main(void) {
                        &yes,            // Optval
                        sizeof(int)      // Optlen
                        ) == -1) {
-            perror("setsockopt");
+            const char msg[] = "setsockopt() failed";
+            perror(msg);
+            syslog(LOG_ERR, msg);
+            closelog();
             exit(-1);
         }
 
@@ -121,7 +128,7 @@ int main(void) {
         // Anyways, commonly done on listen() for incoming connections on a specific port.
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
-            perror("server: bind");
+            perror("Trying bind() .. failed");
             continue;
         }
 
@@ -132,29 +139,42 @@ int main(void) {
     freeaddrinfo(servinfo);  // all done with this structure
 
     if (p == NULL) {
-        fprintf(stderr, "server: failed to bind\n");
+        const char msg[] = "bind() failed -- no service available";
+        fprintf(stderr, "%s\n", msg);
+        syslog(LOG_ERR, msg);
+        closelog();
         exit(-1);
     }
 
     // Listen
     if (listen(sockfd, BACKLOG) == -1) {
-        perror("listen");
+        const char msg[] = "listen() failed";
+        perror(msg);
+        syslog(LOG_ERR, msg);
+        closelog();
         exit(-1);
     }
 
 
     // Set signal handler
+    // https://www.ibm.com/docs/en/zos/2.3.0?topic=functions-sigaction-examine-change-signal-action
     sa.sa_handler = sigchld_handler;  // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("sigaction");
+    if (sigaction(SIGCHLD,      // An ended or stopped child process.
+                  &sa,          // New
+                  NULL          // Old
+                  ) == -1) {
+        const char msg[] = "sigaction() failed";
+        perror(msg);
+        syslog(LOG_ERR, msg);
+        closelog();
         exit(-1);
     }
 
 
     // Server ready
-    printf("server: waiting for connections...\n");
+    syslog(LOG_DEBUG, "Waiting for connections ..");
 
     while (1) {  // main accept() loop
 
@@ -164,7 +184,7 @@ int main(void) {
                           (struct sockaddr *)&their_addr,   // This is filled in with the address of the site that’s connecting to you.
                           &sin_size);
         if (new_fd == -1) {
-            perror("accept");
+            perror("Trying accept() .. failed");
             continue;
         }
 
@@ -174,7 +194,8 @@ int main(void) {
                   get_in_addr((struct sockaddr *)&their_addr),
                   s,
                   sizeof s);
-        printf("server: got connection from %s\n", s);
+
+        syslog(LOG_DEBUG, "Accepted connection from %s\n", s);
 
         // Fork:
         // Parent -- go to listen waiting for incomming again.
@@ -188,8 +209,10 @@ int main(void) {
                      "Hello, world!",   // Data
                      13,                // Data length
                      0                  // Flag
-                     ) == -1)
-                perror("send");
+                     ) == -1) {
+                perror("Trying send() .. failed");
+            }
+
             close(new_fd);
             exit(0);
             // ### Child Process -- End ###

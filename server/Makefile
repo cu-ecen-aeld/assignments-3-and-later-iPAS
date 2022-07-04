@@ -1,10 +1,9 @@
 # https://opensource.com/article/18/8/what-how-makefile
 
 BINS := aesdsocket
-CC := ${CROSS_COMPILE}gcc
-
-CFLAGS = -Wall -Werror
-LFLAGS = -lm
+CC ?= ${CROSS_COMPILE}gcc
+CFLAGS ?= -Wall -Werror -g
+LFLAGS ?= -lm
 
 .PHONY = all default clean run
 

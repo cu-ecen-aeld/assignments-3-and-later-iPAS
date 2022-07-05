@@ -3,12 +3,20 @@
 # description: AESD Socket Server
 #
 
+app=aesdsocket
+cmd=./${app}
+install_dir=/usr/bin
+[[ -f ${install_dir}/${app} ]] && cmd=${install_dir}/${app}
+
 # Start the service
 start() {
+    [[ -f "${cmd}" ]] && ${cmd} -d || exit 1
 }
 
 # Restart the service
 stop() {
+    pid=`pgrep \^${app}\$`
+    [[ "${pid}" != "" ]] && kill -s SIGTERM ${pid} || exit 1
 }
 
 ### main logic ###
@@ -20,7 +28,7 @@ case "$1" in
         stop
         ;;
   status)
-        [[ `pgrep aesdsocket -c` -gt 0 ]] && echo 'running' || echo 'stopping'
+        [[ `pgrep \^${app}\$ -c` -gt 0 ]] && echo 'run' || echo 'stop'
         ;;
   restart|reload|condrestart)
         stop

@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# description: AESD Socket Server
+#
+
+# Start the service
+start() {
+}
+
+# Restart the service
+stop() {
+}
+
+### main logic ###
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        [[ `pgrep aesdsocket -c` -gt 0 ]] && echo 'running' || echo 'stopping'
+        ;;
+  restart|reload|condrestart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+esac
+
+exit 0
